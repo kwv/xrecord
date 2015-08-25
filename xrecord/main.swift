@@ -33,7 +33,7 @@ let help = BoolOption(shortFlag: "h", longFlag: "help",
 cli.addOptions(list, name, id, outFile, force, qt, time, debug, help)
 let (success, error) = cli.parse()
 if !success {
-    println(error!)
+    print(error!)
     cli.printUsage()
     exit(EX_USAGE)
 }
@@ -60,7 +60,7 @@ if qt.value {
 
 let capture = Capture()
 if list.value {
-    println("Available capture devices:")
+    print("Available capture devices:")
     capture.listDevices()
     exit(0)
 }
@@ -68,13 +68,13 @@ if list.value {
 // Set up the input device
 if id.value != nil {
     if !capture.setDeviceById(id.value) {
-        println("Device not found")
+        print("Device not found")
         exit(1)
     }
 }
 if name.value != nil {
     if !capture.setDeviceByName(name.value) {
-        println("Device not found")
+        print("Device not found")
         exit(1)
     }
 }
@@ -83,13 +83,17 @@ if name.value != nil {
 if outFile.value != nil && NSFileManager.defaultManager().fileExistsAtPath(outFile.value!) {
     if force.value {
         var error:NSError?
-        NSFileManager.defaultManager().removeItemAtPath(outFile.value!, error: &error)
+        do {
+            try NSFileManager.defaultManager().removeItemAtPath(outFile.value!)
+        } catch var error1 as NSError {
+            error = error1
+        }
         if (error != nil) {
-            println("Error overwriting existing file (\(error)).")
+            print("Error overwriting existing file (\(error)).")
             exit(2)
         }
     } else {
-        println("The output file already exists, please use a different file: \(outFile.value!)")
+        print("The output file already exists, please use a different file: \(outFile.value!)")
         exit(2)
     }
 }
@@ -116,17 +120,17 @@ capture.start(outFile.value)
 
 let start = NSDate()
 if time.value != nil && time.value > 0 {
-    println("Recording for \(time.value!) seconds.  Hit ctrl-C to stop.")
+    print("Recording for \(time.value!) seconds.  Hit ctrl-C to stop.")
     NSLog("Recording for \(time.value!) seconds.  Hit ctrl-C to stop.")
     sleep(UInt32(time.value!))
 } else {
-    println("Recording started.  Hit ctrl-C to stop.")
+    print("Recording started.  Hit ctrl-C to stop.")
     NSLog("Recording started.  Hit ctrl-C to stop.")
 }
 
 // Loop until we get a ctrl-C or the time limit expires
 var done = false
-do {
+repeat {
     usleep(100)
     if XRecord_Bridge.didSignal() {
         done = true
@@ -139,9 +143,9 @@ do {
     }
 } while !done
 
-println("Stopping recording...")
+print("Stopping recording...")
 NSLog("Stopping recording...")
 
 capture.stop()
-println("Done")
+print("Done")
 NSLog("Done")
